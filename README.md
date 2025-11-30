@@ -1,272 +1,91 @@
-\# 🏭 SQL Project — Evaluate a Manufacturing Process
+# ⚡ EV Charging Station SQL Analytics
 
-
-
-This project analyzes manufacturing part measurements using SQL window functions and Statistical Process Control (SPC).  
-
-The goal is to calculate rolling control limits (UCL \& LCL) for part height measurements and flag any items that fall outside the acceptable range.
-
-
+This project analyzes electric vehicle (EV) charging behavior at **shared charging stations** using SQL. It answers key usage questions to help optimize charging infrastructure.
 
 ---
 
-
-
-\## 📊 Objectives
-
-
-
-\### 1️⃣ Compute Control Limits (UCL \& LCL)
-
-Using a rolling window of 5 items per machine (`operator`), calculate:
-
-\- `avg\_height`
-
-\- `stdev\_height`
-
-\- `ucl = avg\_height + 3 × (stdev\_height / √n)`
-
-\- `lcl = avg\_height − 3 × (stdev\_height / √n)`
-
-
-
-\### 2️⃣ Identify Out-of-Control Parts
-
-Flag any item where:
-
-\- `height > ucl`  
-
-\- `height < lcl`
-
-
-
-\### 3️⃣ Produce a Final Table With Alerts
-
-Include for each item:
-
-\- operator  
-
-\- item number  
-
-\- height  
-
-\- rolling average + stdev  
-
-\- UCL \& LCL  
-
-\- alert (TRUE/FALSE)
-
-
-
----
-
-
-
-\## 🗂️ Dataset
-
-
-
-The dataset comes from the `manufacturing\_parts` table with the following fields:
-
-
-
-| Column     | Description                    |
-
-|------------|--------------------------------|
-
-| item\_no    | Serial number of the part      |
-
-| length     | Length measurement             |
-
-| width      | Width measurement              |
-
-| height     | Height measurement             |
-
-| operator   | Machine that produced the item |
-
-
-
----
-
-
-
-\## 🧠 SQL Concepts Used
-
-
-
-\- `ROW\_NUMBER()` for tracking sequence per machine  
-
-\- Rolling window calculations using `ROWS BETWEEN 4 PRECEDING AND CURRENT ROW`  
-
-\- Statistical functions: `AVG()`, `STDDEV()`  
-
-\- Control limit calculations (UCL \& LCL)  
-
-\- Conditional CASE logic for anomaly detection  
-
-\- CTE structure for readability
-
-
-
----
-
-
-
-\## 🧾 Final SQL Query
-
-
+## 📊 Objectives & Queries
+
+### 1️⃣ Unique Users per Garage
+Counts the number of distinct users who have used shared charging stations in each garage.
+- Output columns: `garage_id`, `num_unique_users`
+- Sorted from most → least users
+- Saved as: **unique_users_per_garage**
 
 ```sql
-
--- Step 1: Create row numbers per operator
-
-WITH ranked AS (
-
-&nbsp;   SELECT
-
-&nbsp;       operator,
-
-&nbsp;       item\_no,
-
-&nbsp;       height,
-
-&nbsp;       ROW\_NUMBER() OVER (
-
-&nbsp;           PARTITION BY operator 
-
-&nbsp;           ORDER BY item\_no
-
-&nbsp;       ) AS row\_number
-
-&nbsp;   FROM manufacturing\_parts
-
-),
-
-
-
--- Step 2: Rolling statistics over last 5 rows
-
-stats AS (
-
-&nbsp;   SELECT
-
-&nbsp;       operator,
-
-&nbsp;       item\_no,
-
-&nbsp;       height,
-
-&nbsp;       AVG(height) OVER (
-
-&nbsp;           PARTITION BY operator 
-
-&nbsp;           ORDER BY item\_no 
-
-&nbsp;           ROWS BETWEEN 4 PRECEDING AND CURRENT ROW
-
-&nbsp;       ) AS avg\_height,
-
-&nbsp;       STDDEV(height) OVER (
-
-&nbsp;           PARTITION BY operator 
-
-&nbsp;           ORDER BY item\_no 
-
-&nbsp;           ROWS BETWEEN 4 PRECEDING AND CURRENT ROW
-
-&nbsp;       ) AS stdev\_height,
-
-&nbsp;       COUNT(\*) OVER (
-
-&nbsp;           PARTITION BY operator 
-
-&nbsp;           ORDER BY item\_no 
-
-&nbsp;           ROWS BETWEEN 4 PRECEDING AND CURRENT ROW
-
-&nbsp;       ) AS n\_window\_5
-
-&nbsp;   FROM ranked
-
-)
-
-
-
--- Step 3: Calculate UCL/LCL + produce alert flags
-
 SELECT
+    garage_id,
+    COUNT(DISTINCT user_id) AS num_unique_users
+FROM charging_sessions
+WHERE is_shared = TRUE
+GROUP BY garage_id
+ORDER BY num_unique_users DESC;
+````
 
-&nbsp;   operator,
+---
 
-&nbsp;   item\_no,
+### 2️⃣ Top 10 Most Popular Charging Start Times
 
-&nbsp;   height,
+Finds the most common start times (weekday + hour) for shared charging sessions.
 
-&nbsp;   avg\_height,
+* Output columns: `weekdays_plugin`, `start_plugin_hour`, `num_charging_sessions`
+* Sorted from most → least sessions
+* Limited to top 10
+* Saved as: **most_popular_shared_start_times**
 
-&nbsp;   stdev\_height,
-
-&nbsp;   (avg\_height + (3 \* stdev\_height / SQRT(n\_window\_5))) AS ucl,
-
-&nbsp;   (avg\_height - (3 \* stdev\_height / SQRT(n\_window\_5))) AS lcl,
-
-&nbsp;   CASE
-
-&nbsp;       WHEN height > (avg\_height + (3 \* stdev\_height / SQRT(n\_window\_5))) THEN TRUE
-
-&nbsp;       WHEN height < (avg\_height - (3 \* stdev\_height / SQRT(n\_window\_5))) THEN TRUE
-
-&nbsp;       ELSE FALSE
-
-&nbsp;   END AS alert
-
-FROM stats
-
-WHERE n\_window\_5 = 5;
-
+```sql
+SELECT
+    EXTRACT(DOW FROM plugin_start_time) AS weekdays_plugin,
+    EXTRACT(HOUR FROM plugin_start_time) AS start_plugin_hour,
+    COUNT(*) AS num_charging_sessions
+FROM charging_sessions
+WHERE is_shared = TRUE
+GROUP BY weekdays_plugin, start_plugin_hour
+ORDER BY num_charging_sessions DESC
+LIMIT 10;
 ```
 
+---
 
+### 3️⃣ Long Duration Shared Users
 
-📈 Example Output Columns
+Identifies users whose average shared charging session lasts > 10 hours.
 
-operator	item\_no	height	avg\_height	stdev\_height	ucl	lcl	alert
+* Output columns: `user_id`, `avg_charging_duration`
+* Sorted from longest → shortest durations
+* Saved as: **long_duration_shared_users**
 
-Op1	15	20.25	20.00	0.40	21.20	18.80	TRUE
+```sql
+SELECT
+    user_id,
+    AVG(charging_duration_hrs) AS avg_charging_duration
+FROM charging_sessions
+WHERE is_shared = TRUE
+GROUP BY user_id
+HAVING AVG(charging_duration_hrs) > 10
+ORDER BY avg_charging_duration DESC;
+```
 
-Op2	9	18.90	19.10	0.30	20.00	18.20	FALSE
+---
 
+## 🧠 Skills Demonstrated
 
+* SQL Aggregation & Grouping
+* Time-based Analysis (weekday & hour extraction)
+* Filtering and Ranking Insights
+* Practical EV usage analytics
 
-(table is illustrative)
+---
 
+## 📁 Output DataFrames
 
+| DataFrame Name                  | Description                           |
+| ------------------------------- | ------------------------------------- |
+| unique_users_per_garage         | Distinct users per garage             |
+| most_popular_shared_start_times | Top 10 busy times by weekday/hour     |
+| long_duration_shared_users      | Users who charge >10 hours on average |
 
-🚀 Insights \& Value
+---
 
-Automatically detects quality deviations
-
-
-
-Enables early intervention before defects increase
-
-
-
-Ensures parts consistently meet design specifications
-
-
-
-Provides operators with feedback on machine performance
-
-
-
-Demonstrates practical SQL data quality monitoring skills
-
-
-
-📝 Summary
-
-This project applies SQL window functions to evaluate a manufacturing process using SPC methodology.
-
-Rolling statistics, control limits, and alert detection combine to provide a real-time quality monitoring system.
+🚀 This SQL analysis helps identify demand patterns and improve resource planning for EV communities.
 
