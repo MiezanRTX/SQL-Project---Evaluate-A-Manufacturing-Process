@@ -1,128 +1,124 @@
-🏭 SQL Project: Evaluate a Manufacturing Process
+\# 🏭 SQL Project — Evaluate a Manufacturing Process
 
 
 
-This project analyzes a manufacturing process using SQL window functions, summary statistics, and statistical process control (SPC) principles.
+This project analyzes manufacturing part measurements using SQL window functions and Statistical Process Control (SPC).  
 
-The goal is to calculate the acceptable height range using Upper Control Limit (UCL) and Lower Control Limit (LCL), then flag any manufactured parts that fall outside this acceptable range.
+The goal is to calculate rolling control limits (UCL \& LCL) for part height measurements and flag any items that fall outside the acceptable range.
 
 
 
-📘 Project Overview
+---
 
 
 
-Manufacturing processes require tight control to ensure products meet quality standards.
+\## 📊 Objectives
 
-This project applies SPC methods to determine whether parts produced by different machines (operator) fall within a defined acceptable height range.
 
 
+\### 1️⃣ Compute Control Limits (UCL \& LCL)
 
-According to the project specification (see page 1 of the PDF) :
+Using a rolling window of 5 items per machine (`operator`), calculate:
 
+\- `avg\_height`
 
+\- `stdev\_height`
 
-UCL = avg\_height + 3 × (stdev\_height / √n)
+\- `ucl = avg\_height + 3 × (stdev\_height / √n)`
 
+\- `lcl = avg\_height − 3 × (stdev\_height / √n)`
 
 
-LCL = avg\_height − 3 × (stdev\_height / √n)
 
+\### 2️⃣ Identify Out-of-Control Parts
 
+Flag any item where:
 
-Where n is a rolling window of 5 parts.
+\- `height > ucl`  
 
+\- `height < lcl`
 
 
-We use SQL window functions to:
 
+\### 3️⃣ Produce a Final Table With Alerts
 
+Include for each item:
 
-Calculate rolling averages and standard deviations
+\- operator  
 
+\- item number  
 
+\- height  
 
-Compute UCL and LCL dynamically
+\- rolling average + stdev  
 
+\- UCL \& LCL  
 
+\- alert (TRUE/FALSE)
 
-Identify parts violating control limits
 
 
+---
 
-Output a final DataFrame (alerts) containing flagged items
 
 
+\## 🗂️ Dataset
 
-🗂️ Dataset
 
 
+The dataset comes from the `manufacturing\_parts` table with the following fields:
 
-The data is stored in the manufacturing\_parts table (page 1) :
 
 
+| Column     | Description                    |
 
-Field	Description
+|------------|--------------------------------|
 
-item\_no	Serial number of the item produced
+| item\_no    | Serial number of the part      |
 
-length	Length of the item
+| length     | Length measurement             |
 
-width	Width of the item
+| width      | Width measurement              |
 
-height	Height of the item
+| height     | Height measurement             |
 
-operator	The operating machine
+| operator   | Machine that produced the item |
 
-🧠 SQL Concepts Demonstrated
 
 
+---
 
-Window Functions
 
 
+\## 🧠 SQL Concepts Used
 
-ROW\_NUMBER()
 
 
+\- `ROW\_NUMBER()` for tracking sequence per machine  
 
-AVG() OVER()
+\- Rolling window calculations using `ROWS BETWEEN 4 PRECEDING AND CURRENT ROW`  
 
+\- Statistical functions: `AVG()`, `STDDEV()`  
 
+\- Control limit calculations (UCL \& LCL)  
 
-STDDEV() OVER()
+\- Conditional CASE logic for anomaly detection  
 
+\- CTE structure for readability
 
 
-Sliding window frames (ROWS BETWEEN 4 PRECEDING AND CURRENT ROW)
 
+---
 
 
-Statistical Process Control (SPC)
 
+\## 🧾 Final SQL Query
 
 
-Dynamic calculations of control limits
 
+```sql
 
-
-Conditional logic for anomaly detection
-
-
-
-CTE structuring for clarity
-
-
-
-🧾 Final SQL Solution
-
-
-
-This is the full working SQL solution shown on page 2 of the PDF — rewritten cleanly for Markdown:
-
-
-
--- Step 1: Create subquery for row\_number per operator
+-- Step 1: Create row numbers per operator
 
 WITH ranked AS (
 
@@ -134,15 +130,21 @@ WITH ranked AS (
 
 &nbsp;       height,
 
-&nbsp;       ROW\_NUMBER() OVER (PARTITION BY operator ORDER BY item\_no) AS row\_number
+&nbsp;       ROW\_NUMBER() OVER (
 
-&nbsp;   FROM public.manufacturing\_parts
+&nbsp;           PARTITION BY operator 
+
+&nbsp;           ORDER BY item\_no
+
+&nbsp;       ) AS row\_number
+
+&nbsp;   FROM manufacturing\_parts
 
 ),
 
 
 
--- Step 2: Create subquery for rolling statistics (avg, stdev, n=5)
+-- Step 2: Rolling statistics over last 5 rows
 
 stats AS (
 
@@ -164,8 +166,6 @@ stats AS (
 
 &nbsp;       ) AS avg\_height,
 
-&nbsp;       
-
 &nbsp;       STDDEV(height) OVER (
 
 &nbsp;           PARTITION BY operator 
@@ -176,9 +176,7 @@ stats AS (
 
 &nbsp;       ) AS stdev\_height,
 
-&nbsp;       
-
-&nbsp;       COUNT(height) OVER (
+&nbsp;       COUNT(\*) OVER (
 
 &nbsp;           PARTITION BY operator 
 
@@ -194,7 +192,7 @@ stats AS (
 
 
 
--- Final Output: Calculate UCL/LCL and determine alerts
+-- Step 3: Calculate UCL/LCL + produce alert flags
 
 SELECT
 
@@ -208,15 +206,15 @@ SELECT
 
 &nbsp;   stdev\_height,
 
-&nbsp;   (avg\_height + (3 \* (stdev\_height) / SQRT(n\_window\_5))) AS ucl,
+&nbsp;   (avg\_height + (3 \* stdev\_height / SQRT(n\_window\_5))) AS ucl,
 
-&nbsp;   (avg\_height - (3 \* (stdev\_height) / SQRT(n\_window\_5))) AS lcl,
+&nbsp;   (avg\_height - (3 \* stdev\_height / SQRT(n\_window\_5))) AS lcl,
 
 &nbsp;   CASE
 
-&nbsp;       WHEN height > (avg\_height + (3 \* (stdev\_height) / SQRT(n\_window\_5))) THEN TRUE
+&nbsp;       WHEN height > (avg\_height + (3 \* stdev\_height / SQRT(n\_window\_5))) THEN TRUE
 
-&nbsp;       WHEN height < (avg\_height - (3 \* (stdev\_height) / SQRT(n\_window\_5))) THEN TRUE
+&nbsp;       WHEN height < (avg\_height - (3 \* stdev\_height / SQRT(n\_window\_5))) THEN TRUE
 
 &nbsp;       ELSE FALSE
 
@@ -226,69 +224,49 @@ FROM stats
 
 WHERE n\_window\_5 = 5;
 
-
-
-📈 Example Output
-
-
-
-Page 2 of the PDF shows the resulting DataFrame :
+```
 
 
 
-Multiple measurements per operator
+📈 Example Output Columns
+
+operator	item\_no	height	avg\_height	stdev\_height	ucl	lcl	alert
+
+Op1	15	20.25	20.00	0.40	21.20	18.80	TRUE
+
+Op2	9	18.90	19.10	0.30	20.00	18.20	FALSE
 
 
 
-Computed rolling averages \& standard deviations
+(table is illustrative)
 
 
 
-Dynamically calculated UCL \& LCL
+🚀 Insights \& Value
+
+Automatically detects quality deviations
 
 
 
-alert = TRUE when height is out of control range
+Enables early intervention before defects increase
 
 
 
-This helps identify operators or batches requiring quality intervention.
+Ensures parts consistently meet design specifications
 
 
 
-🚀 Business Impact
+Provides operators with feedback on machine performance
 
 
 
-This SQL-based SPC system:
+Demonstrates practical SQL data quality monitoring skills
 
 
 
-Detects deviations in real time
+📝 Summary
 
+This project applies SQL window functions to evaluate a manufacturing process using SPC methodology.
 
-
-Ensures consistent product quality
-
-
-
-Reduces defects and scrap rates
-
-
-
-Helps operators adjust machines before major failures occur
-
-
-
-Enables long-term trend analysis for continuous improvement
-
-
-
-📌 Summary
-
-
-
-This project shows how to combine SQL analytics with SPC methodology to evaluate and monitor a manufacturing process.
-
-By using rolling window calculations, dynamic UCL/LCL, and anomaly detection, we can ensure manufacturing quality stays within acceptable limits.
+Rolling statistics, control limits, and alert detection combine to provide a real-time quality monitoring system.
 
