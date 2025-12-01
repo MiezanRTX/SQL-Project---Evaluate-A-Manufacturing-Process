@@ -128,15 +128,15 @@ WHERE n_window_5 = 5;
 (table is illustrative)
 
 ## 🚀 Insights & Value
-Automatically detects quality deviations
+- Automatically detects quality deviations
 
-Enables early intervention before defects increase
+- Enables early intervention before defects increase
 
-Ensures parts consistently meet design specifications
+- Ensures parts consistently meet design specifications
 
-Provides operators with feedback on machine performance
+- Provides operators with feedback on machine performance
 
-Demonstrates practical SQL data quality monitoring skills
+- Demonstrates practical SQL data quality monitoring skills
 
 ## 📝 Summary
 This project applies SQL window functions to evaluate a manufacturing process using SPC methodology.
