@@ -138,6 +138,11 @@ WHERE n_window_5 = 5;
 
 - Demonstrates practical SQL data quality monitoring skills
 
-## 📝 Summary
-This project applies SQL window functions to evaluate a manufacturing process using SPC methodology.
-Rolling statistics, control limits, and alert detection combine to provide a real-time quality monitoring system.
+## 🏁 Conclusion
+
+This project demonstrates how SQL can be used as a powerful tool for monitoring and improving manufacturing quality. By applying Statistical Process Control (SPC) methods directly within SQL, we successfully calculated rolling averages, standard deviations, and dynamic control limits for each machine. These metrics enabled us to automatically identify parts that fall outside acceptable height thresholds, signaling potential issues in the production process.
+
+The final SQL solution provides a scalable and repeatable approach for detecting deviations, supporting early intervention, and ensuring consistent product quality. This type of data-driven quality monitoring can help manufacturing teams reduce defect rates, minimize rework, and maintain stable, high-performing processes.
+
+Overall, the project highlights the value of combining SQL analytics with industrial engineering principles to create efficient, automated quality-control systems.
+
