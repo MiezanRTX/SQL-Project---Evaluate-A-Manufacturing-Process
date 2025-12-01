@@ -118,9 +118,12 @@ WHERE n_window_5 = 5;
 ```
 
 ## 📈 Example Output Columns
-operator	item_no	height	avg_height	stdev_height	ucl	lcl	alert
-Op1	15	20.25	20.00	0.40	21.20	18.80	TRUE
-Op2	9	18.90	19.10	0.30	20.00	18.20	FALSE
+
+| operator | item_no | height | avg_height | stdev_height | ucl   | lcl   | alert |
+|----------|---------|--------|------------|---------------|--------|--------|--------|
+| Op1      | 15      | 20.25  | 20.00      | 0.40          | 21.20 | 18.80 | TRUE   |
+| Op2      | 9       | 18.90  | 19.10      | 0.30          | 20.00 | 18.20 | FALSE  |
+
 
 (table is illustrative)
 
