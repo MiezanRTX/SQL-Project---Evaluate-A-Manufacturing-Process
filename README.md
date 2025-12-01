@@ -1,7 +1,11 @@
 # 🏭 SQL Project — Evaluate a Manufacturing Process
+## 📌 Executive Summary
 
-This project analyzes manufacturing part measurements using SQL window functions and Statistical Process Control (SPC).  
-The goal is to calculate rolling control limits (UCL & LCL) for part height measurements and flag any items that fall outside the acceptable range.
+This project evaluates the stability and quality of a manufacturing process using SQL-based Statistical Process Control (SPC). By analyzing historical measurements from multiple machines (operators), the project calculates rolling averages, standard deviations, and dynamic control limits — Upper Control Limit (UCL) and Lower Control Limit (LCL) — for each part produced.
+
+Using SQL window functions, the system monitors the last five measurements of each operator to detect deviations in real time. Any part whose height falls outside the calculated control limits is automatically flagged as an out-of-control event.
+
+This approach provides a data-driven method to ensure consistent product quality, identify equipment issues early, and improve operational efficiency. The result is a scalable quality-monitoring SQL solution that can be applied across manufacturing lines to support continuous improvement and reduce defect rates.
 
 ---
 
