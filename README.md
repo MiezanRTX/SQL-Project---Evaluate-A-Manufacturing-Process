@@ -113,14 +113,14 @@ FROM stats
 WHERE n_window_5 = 5;
 ```
 
-##📈 Example Output Columns
+## 📈 Example Output Columns
 operator	item_no	height	avg_height	stdev_height	ucl	lcl	alert
 Op1	15	20.25	20.00	0.40	21.20	18.80	TRUE
 Op2	9	18.90	19.10	0.30	20.00	18.20	FALSE
 
 (table is illustrative)
 
-##🚀 Insights & Value
+## 🚀 Insights & Value
 Automatically detects quality deviations
 
 Enables early intervention before defects increase
@@ -131,6 +131,6 @@ Provides operators with feedback on machine performance
 
 Demonstrates practical SQL data quality monitoring skills
 
-##📝 Summary
+## 📝 Summary
 This project applies SQL window functions to evaluate a manufacturing process using SPC methodology.
 Rolling statistics, control limits, and alert detection combine to provide a real-time quality monitoring system.
